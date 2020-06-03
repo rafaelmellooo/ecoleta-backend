@@ -1,9 +1,17 @@
-import { Router } from 'express'
+import express from 'express'
+import path from 'path'
 
-const routes = Router()
+import ItemController from './controllers/ItemController'
+import PointController from './controllers/PointController'
 
-routes.get('/', (request, response) => {
-  return response.json({ hello: 'world' })
-})
+const routes = express.Router()
+
+routes.get('/items', ItemController.index)
+
+routes.get('/points', PointController.index)
+routes.get('/points/:id', PointController.show)
+routes.post('/points', PointController.store)
+
+routes.use('/uploads', express.static(path.resolve(__dirname, '..', 'uploads')))
 
 export default routes
