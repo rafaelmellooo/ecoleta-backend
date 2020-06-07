@@ -19,7 +19,14 @@ class PointController {
       .distinct()
       .select('points.*')
 
-    return response.status(200).json(points)
+    const serializedPoints = points.map((point) => {
+      point.image_url = `http://192.168.0.9:3333/uploads/${point.image}`
+      delete point.image
+
+      return point
+    })
+
+    return response.status(200).json(serializedPoints)
   }
 
   async show(request: Request, response: Response) {
@@ -31,12 +38,19 @@ class PointController {
       return response.status(400).json({ message: 'Point not found.' })
     }
 
+    const serializedPoint = (): {} => {
+      point.image_url = `http://192.168.0.9:3333/uploads/${point.image}`
+      delete point.image
+
+      return point as {}
+    }
+
     const items = await knex('items')
       .join('point_items', 'items.id', '=', 'point_items.item_id')
       .where('point_items.point_id', id)
       .select('items.title')
 
-    return response.json({ point, items })
+    return response.json({ point: serializedPoint(), items })
   }
 
   async store(request: Request, response: Response) {
@@ -52,8 +66,7 @@ class PointController {
     } = request.body
 
     const point = {
-      image:
-        'https://images.unsplash.com/photo-1506484381205-f7945653044d?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=750&q=80',
+      image: request.file.filename,
       name,
       email,
       whatsapp,
@@ -67,12 +80,15 @@ class PointController {
 
     const [point_id] = await trx('points').insert(point)
 
-    const pointItems = items.map((item_id: number) => {
-      return {
-        point_id,
-        item_id,
-      }
-    })
+    const pointItems = items
+      .split(',')
+      .map((item: string) => Number(item.trim()))
+      .map((item_id: number) => {
+        return {
+          point_id,
+          item_id,
+        }
+      })
 
     await trx('point_items').insert(pointItems)
 
